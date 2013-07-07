@@ -31,13 +31,21 @@ Test *pInstance = NULL;
 int lua_print_name(lua_State *L)
 {
 	int n = lua_gettop(L);
-	if (n > 2)
+	if (n != 1 && lua_type(L, -1) != LUA_TTABLE)
 	{
 		lua_pushstring(L, "incorrect argument");
 		lua_error(L);
 	}
 	// get this pointer
-	// this->print_name();
+	lua_getfield(L, -1, "__id");
+	Test* pTest = (Test*)lua_touserdata(L, -1);
+	if (pTest == NULL)
+	{
+		lua_pushstring(L, "fail to get this pointer");
+		lua_error(L);
+	}
+	pTest->print_name();
+	return 0;
 }
 
 // get instance & bind metatable
@@ -50,8 +58,14 @@ int lua_get_instance(lua_State *L)
 	}
 	lua_newtable(L);
 	lua_pushlightuserdata(L, (void*)pInstance);
-	lua_setfield(L, -1, "__id");
+	lua_setfield(L, -2, "__id");
+
 	// TODO: set metatable
+	lua_newtable(L);
+	lua_getfield(L, LUA_REGISTRYINDEX, "Test");
+	lua_setfield(L, -2, "__index");
+
+	lua_setmetatable(L, -2);
 	// return table
 	return 1;
 }
@@ -59,12 +73,13 @@ int lua_get_instance(lua_State *L)
 // meta table
 int registe_function(lua_State *L)
 {
+	lua_register(L, "get_instance", lua_get_instance);
+
 	lua_newtable(L);
 	lua_pushcfunction(L, lua_print_name);
 	lua_setfield(L, -2, "print_name");
 	lua_setfield(L, LUA_REGISTRYINDEX, "Test");
-
-	lua_register(L, "get_instance", lua_get_instance);
+	return 0;
 }
 
 // call from lua
@@ -85,7 +100,11 @@ int main()
 
 	registe_function(L);
 	// TODO: call a lua script file
-	luaL_dofile(L, "class_export.lua");
+	int result = luaL_dofile(L, "class_export.lua");
+	if (LUA_OK != result)
+	{
+		printf("%s, error code: %d\n", "do file failed: class_export.lua", result);
+	}
 	lua_close(L);
 
 	delete pInstance;
