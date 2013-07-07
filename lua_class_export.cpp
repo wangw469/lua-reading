@@ -1,3 +1,5 @@
+#include <lua.h>
+#include <lauxlib.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -13,24 +15,73 @@ public:
 
 	void print_name()
 	{
-		printf("%s", m_szName);
+		printf("%s\n", m_szName);
 	}
 
 private:
 	char m_szName[32];
 };
 
+Test *pInstance = NULL;
+
 // lua function
-void lua_print_name(lua_State *L)
+int lua_print_name(lua_State *L)
 {
+	int n = lua_gettop(L);
+	if (n > 2)
+	{
+		lua_pushstring(L, "incorrect argument");
+		lua_error(L);
+	}
+	// get this pointer
+	// this->print_name();
 }
+
+// get instance & bind metatable
+int lua_get_instance(lua_State *L)
+{
+	if (pInstance == NULL)
+	{
+		lua_pushstring(L, "can't find instance");
+		lua_error(L);
+	}
+	lua_newtable(L);
+	lua_pushlightuserdata(L, (void*)pInstance);
+	lua_setfield(L, -1, "__id");
+	// TODO: set metatable
+	// return table
+	return 1;
+}
+
 // meta table
-// create instance
-// get instance
+int registe_function(lua_State *L)
+{
+	lua_newtable(L);
+	lua_pushcfunction(L, lua_print_name);
+	lua_setfield(L, -2, "print_name")
+	lua_setfield(L, LUA_REGISTRYINDEX, "Test");
+	lua_pushstring(L, lua_get_instance);
+	lua_setfield(L, LUA_REGISTRYINDEX "get_instance");
+}
+
 // call from lua
 int main()
 {
-	Test test("hello, the world!\n");
+	Test test("hello, the world!");
 	test.print_name();
+
+	// create instance
+	pInstance = new Test();
+
+	lua_State* L = luaL_newstate();
+	if (L == NULL)
+	{
+		printf("%s\n", "fail to create lua state");
+		return 1;
+	}
+
+	
+	// TODO: call a lua script file
+	luaL_dofile(L, "class_export.lua");
 	return 0;
 }
