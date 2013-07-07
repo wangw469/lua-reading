@@ -1,7 +1,10 @@
-#include <lua.h>
-#include <lauxlib.h>
 #include <stdio.h>
 #include <string.h>
+
+extern "C" {
+#include <lua.h>
+#include <lauxlib.h>
+}
 
 // class
 class Test
@@ -58,10 +61,10 @@ int registe_function(lua_State *L)
 {
 	lua_newtable(L);
 	lua_pushcfunction(L, lua_print_name);
-	lua_setfield(L, -2, "print_name")
+	lua_setfield(L, -2, "print_name");
 	lua_setfield(L, LUA_REGISTRYINDEX, "Test");
-	lua_pushstring(L, lua_get_instance);
-	lua_setfield(L, LUA_REGISTRYINDEX "get_instance");
+
+	lua_register(L, "get_instance", lua_get_instance);
 }
 
 // call from lua
@@ -71,7 +74,7 @@ int main()
 	test.print_name();
 
 	// create instance
-	pInstance = new Test();
+	pInstance = new Test("please call me from lua");
 
 	lua_State* L = luaL_newstate();
 	if (L == NULL)
@@ -80,8 +83,12 @@ int main()
 		return 1;
 	}
 
-	
+	registe_function(L);
 	// TODO: call a lua script file
 	luaL_dofile(L, "class_export.lua");
+	lua_close(L);
+
+	delete pInstance;
+	pInstance = NULL;
 	return 0;
 }
