@@ -60,7 +60,6 @@ int lua_get_instance(lua_State *L)
 	lua_pushlightuserdata(L, (void*)pInstance);
 	lua_setfield(L, -2, "__id");
 
-	// TODO: set metatable
 	lua_newtable(L);
 	lua_getfield(L, LUA_REGISTRYINDEX, "Test");
 	lua_setfield(L, -2, "__index");
@@ -99,7 +98,6 @@ int main()
 	}
 
 	registe_function(L);
-	// TODO: call a lua script file
 	int result = luaL_dofile(L, "class_export.lua");
 	if (LUA_OK != result)
 	{
