@@ -1,2 +1,1 @@
-print("hello, the world")
-print(get_instance())
+get_instance():print_name()
